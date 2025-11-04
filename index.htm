@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba Agente de Voz</title>
+    <script src="https://cdn.jsdelivr.net/gh/reecesel/retell-client-js-sdk@main/dist/retell-bundle-2.0.6.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        button {
+            padding: 20px 40px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Prueba nuestro Agente de Voz</h1>
+        <p>Haz clic para hablar con nuestro asistente</p>
+        <button id="callButton">Iniciar Llamada</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const retellWebClient = window.retellWebClient;
+        const button = document.getElementById('callButton');
+        const status = document.getElementById('status');
+        let isCallActive = false;
+
+        button.addEventListener('click', async function() {
+            if (isCallActive) {
+                retellWebClient.stopCall();
+                button.textContent = 'Iniciar Llamada';
+                button.style.backgroundColor = '#4CAF50';
+                status.textContent = '';
+                isCallActive = false;
+            } else {
+                try {
+                    button.disabled = true;
+                    status.textContent = 'Conectando...';
+                    
+                    // Llamar a tu backend
+                    const response = await fetch('/api/create-call', {
+                        method: 'POST',
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.access_token) {
+                        await retellWebClient.startCall({
+                            accessToken: data.access_token,
+                        });
+                        
+                        button.textContent = 'Finalizar Llamada';
+                        button.style.backgroundColor = '#f44336';
+                        button.disabled = false;
+                        status.textContent = '✓ Conectado - Puedes hablar';
+                        isCallActive = true;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    status.textContent = 'Error al conectar';
+                    button.disabled = false;
+                }
+            }
+        });
+
+        retellWebClient.on('call_ended', () => {
+            button.textContent = 'Iniciar Llamada';
+            button.style.backgroundColor = '#4CAF50';
+            status.textContent = 'Llamada finalizada';
+            isCallActive = false;
+        });
+    </script>
+</body>
+</html>
